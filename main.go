@@ -1,13 +1,19 @@
-package main 
+package main
 
 import (
 	"fmt"
-	"monkey/token"
+	"monkey/repl"
+	"os"
+	"os/user"
 )
 
+func main() {
+	user, err := user.Current()
+	if err != nil {
+		panic(err)
+	}
+	fmt.Printf("Hello there %s, home dir: %s\n", user.Username, user.HomeDir)
 
-func main () {
-	var test token.Token
-	test2 := token.Token{Type: "Test", Literal: "again"}
-	fmt.Println("Hello there ", test2.Type, test.Literal)
+	repl.Start(os.Stdin, os.Stdout)
+
 }

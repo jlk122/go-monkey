@@ -27,6 +27,66 @@ func (p *Parser) nextToken() {
 	p.peekToken = p.l.NextToken()
 }
 
+func (p *Parser) curTokenIs(testToken token.TokenType) bool {
+	return p.curToken.Type == testToken
+}
+
+func (p *Parser) peekTokenIs(testToken token.TokenType) bool {
+	return p.peekToken.Type == testToken
+}
+
+// Gut feeling telling me this is stupid but lets keep it here commented out
+// func (p *Parser) expectedPeek(expectedToken token.TokenType) bool {
+// 	if p.peekTokenIs(expectedToken) {
+// 		p.nextToken() // Why change state internally, messes up the readability??
+// 		return true
+// 	}
+// 	return false
+// }
+
+func (p *Parser) parseStatement() ast.Statement {
+	switch p.curToken.Type {
+	case token.LET:
+		return p.parseLetStatement()
+	default:
+		return nil
+	}
+}
+
+func (p *Parser) parseLetStatement() *ast.LetStatement {
+	stmt := &ast.LetStatement{Token: p.curToken}
+
+	if !p.peekTokenIs(token.IDENT) {
+		return nil
+	}
+	p.nextToken()
+
+	stmt.Name = &ast.Identifier{Token: p.curToken, Value: p.curToken.Literal}
+
+	if !p.peekTokenIs(token.ASSIGN) {
+		return nil
+	}
+	p.nextToken()
+
+	// TODO: Skipping epression
+	for !p.curTokenIs(token.SEMICOLON) {
+		p.nextToken()
+	}
+
+	return stmt
+}
+
 func (p *Parser) ParseProgram() *ast.Program {
-	return nil
+	program := &ast.Program{}
+	program.Statements = []ast.Statement{}
+
+	for p.curToken.Type != token.EOF {
+		stmt := p.parseStatement()
+		if stmt != nil {
+			program.Statements = append(program.Statements, stmt)
+		}
+		p.nextToken()
+	}
+
+	return program
 }

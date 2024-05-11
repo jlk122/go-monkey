@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"fmt"
 	"monkey/ast"
 	"monkey/lexer"
 	"monkey/token"
@@ -10,16 +11,30 @@ type Parser struct {
 	l         *lexer.Lexer
 	curToken  token.Token
 	peekToken token.Token
+	errors    []string
 }
 
 func New(l *lexer.Lexer) *Parser {
-	p := &Parser{l: l}
+	p := &Parser{
+		l:      l,
+		errors: []string{},
+	}
 
 	// Initialize the parser by setting cur to furst and peek to second token
 	p.nextToken()
 	p.nextToken()
 
 	return p
+}
+
+func (p *Parser) Errors() []string {
+	return p.errors
+}
+
+func (p *Parser) peekError(t token.TokenType) {
+	msg := fmt.Sprintf("Expected next token to be %8s, got %s",
+		t, p.peekToken.Type)
+	p.errors = append(p.errors, msg)
 }
 
 func (p *Parser) nextToken() {
@@ -35,14 +50,15 @@ func (p *Parser) peekTokenIs(testToken token.TokenType) bool {
 	return p.peekToken.Type == testToken
 }
 
-// Gut feeling telling me this is stupid but lets keep it here commented out
-// func (p *Parser) expectedPeek(expectedToken token.TokenType) bool {
-// 	if p.peekTokenIs(expectedToken) {
-// 		p.nextToken() // Why change state internally, messes up the readability??
-// 		return true
-// 	}
-// 	return false
-// }
+// Checks next token and advances the tokens if succesful
+func (p *Parser) expectedPeek(expectedToken token.TokenType) bool {
+	if p.peekTokenIs(expectedToken) {
+		p.nextToken() // Why change state internally, messes up the readability??
+		return true
+	}
+	p.peekError(expectedToken)
+	return false
+}
 
 func (p *Parser) parseStatement() ast.Statement {
 	switch p.curToken.Type {
@@ -56,17 +72,15 @@ func (p *Parser) parseStatement() ast.Statement {
 func (p *Parser) parseLetStatement() *ast.LetStatement {
 	stmt := &ast.LetStatement{Token: p.curToken}
 
-	if !p.peekTokenIs(token.IDENT) {
+	if !p.expectedPeek(token.IDENT) {
 		return nil
 	}
-	p.nextToken()
 
 	stmt.Name = &ast.Identifier{Token: p.curToken, Value: p.curToken.Literal}
 
-	if !p.peekTokenIs(token.ASSIGN) {
+	if !p.expectedPeek(token.ASSIGN) {
 		return nil
 	}
-	p.nextToken()
 
 	// TODO: Skipping epression
 	for !p.curTokenIs(token.SEMICOLON) {
@@ -80,7 +94,7 @@ func (p *Parser) ParseProgram() *ast.Program {
 	program := &ast.Program{}
 	program.Statements = []ast.Statement{}
 
-	for p.curToken.Type != token.EOF {
+	for !p.curTokenIs(token.EOF) {
 		stmt := p.parseStatement()
 		if stmt != nil {
 			program.Statements = append(program.Statements, stmt)

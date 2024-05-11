@@ -6,16 +6,35 @@ import (
 	"testing"
 )
 
+func checkParserErrors(t *testing.T, p *Parser) {
+	errors := p.Errors()
+	if len(errors) == 0 {
+		return
+	}
+
+	t.Errorf("Parser has %d errors", len(errors))
+	for _, msg := range errors {
+		t.Errorf("parser error: %q", msg)
+	}
+	t.FailNow()
+}
+
 func TestLetStatment(t *testing.T) {
-	input := `
+	// 	inputFail := `
+	// let x  5;
+	// let  = 10;
+	// let 8554;
+	// `
+	inputSucced := `
 let x = 5;
 let y = 10;
-let foobar = 8554;
+let foo = 8554;
 `
-	l := lexer.New(input)
+	l := lexer.New(inputSucced)
 	p := New(l)
 
 	program := p.ParseProgram()
+	checkParserErrors(t, p)
 	if program == nil {
 		t.Fatalf("ParseProgram failed")
 	}
@@ -28,7 +47,7 @@ let foobar = 8554;
 	}{
 		{"x"},
 		{"y"},
-		{"foobar"},
+		{"foo"},
 	}
 
 	for i, tt := range tests {

@@ -19,7 +19,7 @@ func checkParserErrors(t *testing.T, p *Parser) {
 	t.FailNow()
 }
 
-func TestLetStatment(t *testing.T) {
+func TestLetStatments(t *testing.T) {
 	// 	inputFail := `
 	// let x  5;
 	// let  = 10;
@@ -65,8 +65,12 @@ func testLetStatement(t *testing.T, s ast.Statement, name string) bool {
 		return false
 	}
 
-	// what is Statement.(*ast.LetStatement), member operator and pointer to a struct type?
-	// Probably has to do with implementing the interface?
+	// Type assertion
+	// (or converting an interface value to another type, in this case a pointer to ast.LetStatement)
+	// s - interface value, checks out
+	// *ast.LetStatement - the type were trying to assert s to
+	// letStmt - variable holding the asserted value if assertion succesful (nil of assertion fails)
+	// ok - bool that indicates assertion success
 	letStmt, ok := s.(*ast.LetStatement)
 	if !ok {
 		t.Errorf("s not *ast.LetStatement, got %T", s)
@@ -84,4 +88,37 @@ func testLetStatement(t *testing.T, s ast.Statement, name string) bool {
 	}
 
 	return true
+}
+
+func TestReturnStatements(t *testing.T) {
+	input := `
+return 5;
+return 10;
+return 1337;
+`
+	l := lexer.New(input)
+	p := New(l)
+
+	program := p.ParseProgram()
+	checkParserErrors(t, p)
+
+	if program == nil {
+		t.Fatalf("ParseProgram failed")
+	}
+
+	if len(program.Statements) != 3 {
+		t.Fatalf("program.Statements does not match test case (3 statements), got %d", len(program.Statements))
+	}
+
+	for _, stmt := range program.Statements {
+		returnStmt, ok := stmt.(*ast.ReturnStatement)
+		if !ok {
+			t.Errorf("Statment not *ast.ReturnStatement, got %T", stmt)
+			continue
+		}
+
+		if returnStmt.TokenLiteral() != "return" {
+			t.Errorf("TokenLiteral() not 'return', got %s", returnStmt.TokenLiteral())
+		}
+	}
 }
